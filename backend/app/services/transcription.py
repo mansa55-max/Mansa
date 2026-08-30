@@ -51,15 +51,25 @@ def _load_model():
             raise TranscriptionError(
                 "La bibliothèque faster-whisper n'est pas installée. Lance 'pip install -r requirements.txt'."
             ) from exc
-        _model = WhisperModel(
-            config.WHISPER_MODEL_SIZE,
-            device=config.WHISPER_DEVICE,
-            compute_type=config.WHISPER_COMPUTE_TYPE,
-        )
+        try:
+            _model = WhisperModel(
+                config.WHISPER_MODEL_SIZE,
+                device=config.WHISPER_DEVICE,
+                compute_type=config.WHISPER_COMPUTE_TYPE,
+            )
+        except Exception as exc:
+            raise TranscriptionError(
+                f"Impossible de charger le modèle de transcription Whisper ({config.WHISPER_MODEL_SIZE}). "
+                "Vérifie ta connexion internet (le modèle est téléchargé depuis huggingface.co au premier "
+                f"lancement) : {exc}"
+            ) from exc
     return _model
 
 
 def transcribe_audio(audio_path: Path) -> str:
     model = _load_model()
-    segments, _info = model.transcribe(str(audio_path), beam_size=5)
-    return " ".join(segment.text.strip() for segment in segments).strip()
+    try:
+        segments, _info = model.transcribe(str(audio_path), beam_size=5)
+        return " ".join(segment.text.strip() for segment in segments).strip()
+    except Exception as exc:
+        raise TranscriptionError(f"Échec de la transcription audio : {exc}") from exc
