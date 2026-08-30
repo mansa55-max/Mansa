@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mansa — Import &amp; Résumé de films</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>🎬 Mansa</h1>
+    <p class="subtitle">Importe un film (recherche ou fichier vidéo) et obtiens son résumé</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Rechercher un film</h2>
+      <form id="search-form" class="row">
+        <input id="search-input" type="text" placeholder="Titre du film..." autocomplete="off" required />
+        <button type="submit">Rechercher</button>
+      </form>
+      <div id="search-results" class="results"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Importer un fichier vidéo</h2>
+      <form id="upload-form" class="row">
+        <input id="video-input" type="file" accept=".mp4,.mkv,.mov,.avi,.webm,.m4v" required />
+        <button type="submit">Importer</button>
+      </form>
+      <p class="hint">Formats acceptés : mp4, mkv, mov, avi, webm, m4v. La transcription + le résumé peuvent prendre plusieurs minutes.</p>
+      <div id="upload-status"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Films importés</h2>
+      <div id="movie-list" class="movie-list"></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="modal-close" class="modal-close">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
