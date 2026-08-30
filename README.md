@@ -74,6 +74,43 @@ Puis ouvre http://127.0.0.1:8000 dans ton navigateur.
 Le premier import vidéo télécharge le modèle Whisper choisi (par défaut
 `small`, ~500 Mo) — cela peut prendre un moment la première fois.
 
+## Déploiement en ligne (accès depuis un téléphone, sans ordinateur)
+
+L'appli est conçue pour un usage local, mais peut être déployée sur
+[Render](https://render.com) (offre gratuite) pour y accéder depuis un
+téléphone via un simple lien.
+
+⚠️ Limites du tier gratuit Render à connaître avant de déployer :
+- **Stockage éphémère** : les vidéos importées/générées sont perdues à
+  chaque redéploiement ou redémarrage du service (pas de disque persistant
+  sur l'offre gratuite).
+- **CPU partagé limité** : la transcription et le montage vidéo peuvent
+  prendre plusieurs minutes.
+- **Mise en veille** : le service s'endort après une période d'inactivité et
+  met du temps à redémarrer au premier accès suivant.
+
+### Étapes
+
+1. Crée un compte gratuit sur https://render.com (connexion possible avec
+   GitHub).
+2. Sur le tableau de bord Render : **New → Blueprint**, puis sélectionne ce
+   dépôt GitHub (`mansa55-max/Mansa`, branche `claude/film-summary-generator-dm8u8r`
+   ou `main` une fois la PR fusionnée). Render détecte automatiquement le
+   fichier `render.yaml` à la racine et configure le service (basé sur le
+   `Dockerfile`, qui installe ffmpeg + espeak-ng).
+3. Render demandera de renseigner `TMDB_API_KEY` et `ANTHROPIC_API_KEY`
+   (cette dernière optionnelle) — à saisir dans les champs proposés.
+4. Clique sur **Apply**. Le premier déploiement prend quelques minutes
+   (construction de l'image + téléchargement du modèle Whisper au premier
+   import).
+5. Une fois déployé, Render fournit une URL du type
+   `https://mansa-xxxx.onrender.com` — ouvre-la depuis ton téléphone.
+
+Le modèle Whisper est réglé sur `tiny` par défaut pour ce déploiement
+(`WHISPER_MODEL_SIZE` dans `render.yaml`) afin de rester dans les limites de
+RAM du tier gratuit (512 Mo) ; la qualité de transcription est un peu moins
+bonne qu'avec `small` en local.
+
 ## Structure
 
 ```
