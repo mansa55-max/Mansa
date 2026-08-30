@@ -32,7 +32,15 @@ class MovieOut(BaseModel):
     video_filename: Optional[str] = None
     job_status: str
     job_error: Optional[str] = None
+    recap_status: str
+    recap_error: Optional[str] = None
+    recap_vertical_available: bool = False
+    recap_horizontal_available: bool = False
     created_at: datetime
+
+
+class RecapRequest(BaseModel):
+    formats: list[str] = ["vertical", "horizontal"]
 
 
 class MovieListItem(BaseModel):
@@ -45,4 +53,5 @@ class MovieListItem(BaseModel):
     summary: Optional[str] = None
     source: str
     job_status: str
+    recap_status: str
     created_at: datetime

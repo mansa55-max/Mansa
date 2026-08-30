@@ -20,6 +20,15 @@ class JobStatus(str, enum.Enum):
     error = "error"
 
 
+class RecapStatus(str, enum.Enum):
+    none = "none"
+    pending = "pending"
+    narrating = "narrating"
+    assembling = "assembling"
+    done = "done"
+    error = "error"
+
+
 class Movie(Base):
     __tablename__ = "movies"
 
@@ -37,4 +46,16 @@ class Movie(Base):
     transcript = Column(Text, nullable=True)
     job_status = Column(Enum(JobStatus), default=JobStatus.done, nullable=False)
     job_error = Column(Text, nullable=True)
+    recap_status = Column(Enum(RecapStatus), default=RecapStatus.none, nullable=False)
+    recap_error = Column(Text, nullable=True)
+    recap_vertical_filename = Column(String, nullable=True)
+    recap_horizontal_filename = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    @property
+    def recap_vertical_available(self) -> bool:
+        return bool(self.recap_vertical_filename)
+
+    @property
+    def recap_horizontal_available(self) -> bool:
+        return bool(self.recap_horizontal_filename)

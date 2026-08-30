@@ -18,7 +18,17 @@ const STATUS_LABELS = {
   error: "Erreur",
 };
 
+const RECAP_STATUS_LABELS = {
+  none: "",
+  pending: "En attente...",
+  narrating: "Génération de la narration audio...",
+  assembling: "Montage de la vidéo...",
+  done: "Terminé",
+  error: "Erreur",
+};
+
 let pollTimer = null;
+let openMovieId = null;
 
 async function api(path, options) {
   const res = await fetch(path, options);
@@ -106,10 +116,16 @@ async function loadMovies() {
   try {
     const movies = await api("/api/movies");
     renderMovies(movies);
-    if (movies.some((m) => !["done", "error"].includes(m.job_status))) {
+    const stillWorking = movies.some(
+      (m) => !["done", "error"].includes(m.job_status) || !["none", "done", "error"].includes(m.recap_status)
+    );
+    if (stillWorking) {
       ensurePolling();
     } else {
       stopPolling();
+    }
+    if (openMovieId && movies.some((m) => m.id === openMovieId)) {
+      openMovie(openMovieId);
     }
   } catch (err) {
     movieList.innerHTML = `<p class="error-message">${escapeHtml(err.message)}</p>`;
@@ -127,10 +143,11 @@ function renderMovies(movies) {
     card.className = "movie-card";
     const statusLabel = STATUS_LABELS[movie.job_status] || movie.job_status;
     const statusClass = movie.job_status === "error" ? "error" : movie.job_status === "done" ? "done" : "";
+    const recapBadge = movie.recap_status === "done" ? '<span title="Vidéo résumé disponible">🎬</span>' : "";
     card.innerHTML = `
       ${movie.poster_url ? `<img src="${movie.poster_url}" alt="">` : `<div class="placeholder">🎞️</div>`}
       <div class="card-body">
-        <h3>${escapeHtml(movie.title)}</h3>
+        <h3>${escapeHtml(movie.title)} ${recapBadge}</h3>
         <div class="status ${statusClass}">${statusLabel}</div>
       </div>
     `;
@@ -142,6 +159,7 @@ function renderMovies(movies) {
 async function openMovie(id) {
   try {
     const movie = await api(`/api/movies/${id}`);
+    openMovieId = id;
     modalBody.innerHTML = `
       <h2>${escapeHtml(movie.title)} ${movie.year ? `(${escapeHtml(movie.year)})` : ""}</h2>
       ${movie.poster_url ? `<img src="${movie.poster_url}" style="max-width:160px;border-radius:8px;margin-bottom:1rem;">` : ""}
@@ -150,6 +168,7 @@ async function openMovie(id) {
       ${movie.job_error ? `<p class="error-message">${escapeHtml(movie.job_error)}</p>` : ""}
       ${movie.summary ? `<h3>Résumé</h3><p>${escapeHtml(movie.summary)}</p>` : ""}
       ${movie.summary_source ? `<span class="summary-source">Source : ${movie.summary_source === "llm" ? "IA" : movie.summary_source === "extractive" ? "résumé automatique local" : movie.summary_source}</span>` : ""}
+      ${movie.source === "video" && movie.job_status === "done" ? renderRecapSection(movie) : ""}
       <p><button type="button" id="delete-movie" style="margin-top:1.5rem;background:#402;color:#ff9c9c;">Supprimer</button></p>
     `;
     document.getElementById("delete-movie").addEventListener("click", async () => {
@@ -158,7 +177,73 @@ async function openMovie(id) {
       closeModal();
       loadMovies();
     });
+    const recapButton = document.getElementById("generate-recap");
+    if (recapButton) {
+      recapButton.addEventListener("click", () => {
+        const formats = Array.from(document.querySelectorAll(".recap-format:checked")).map((el) => el.value);
+        if (!formats.length) {
+          alert("Choisis au moins un format.");
+          return;
+        }
+        generateRecap(id, formats);
+      });
+    }
     modal.classList.remove("hidden");
+  } catch (err) {
+    alert("Erreur : " + err.message);
+  }
+}
+
+function renderRecapSection(movie) {
+  const status = movie.recap_status;
+  let body;
+  if (status === "none" || status === "error") {
+    body = `
+      ${status === "error" ? `<p class="error-message">${escapeHtml(movie.recap_error || "Erreur inconnue")}</p>` : ""}
+      <label style="display:block;margin:0.4rem 0;"><input type="checkbox" class="recap-format" value="vertical" checked> Vertical 9:16 (TikTok / Shorts)</label>
+      <label style="display:block;margin:0.4rem 0 0.8rem;"><input type="checkbox" class="recap-format" value="horizontal" checked> Horizontal 16:9 (YouTube)</label>
+      <button type="button" id="generate-recap">Générer la vidéo résumé</button>
+      <p class="hint">Extraits pris depuis ta vidéo importée + narration automatique du résumé. Assure-toi d'avoir les droits de republication avant de publier.</p>
+    `;
+  } else if (status === "done") {
+    const videos = [];
+    if (movie.recap_vertical_available) {
+      videos.push(`
+        <div>
+          <p class="hint">Vertical (TikTok / Shorts)</p>
+          <video controls style="max-width:220px;border-radius:8px;" src="/api/movies/${movie.id}/recap/vertical"></video><br>
+          <a href="/api/movies/${movie.id}/recap/vertical" class="hint">Télécharger</a>
+        </div>
+      `);
+    }
+    if (movie.recap_horizontal_available) {
+      videos.push(`
+        <div>
+          <p class="hint">Horizontal (YouTube)</p>
+          <video controls style="max-width:320px;border-radius:8px;" src="/api/movies/${movie.id}/recap/horizontal"></video><br>
+          <a href="/api/movies/${movie.id}/recap/horizontal" class="hint">Télécharger</a>
+        </div>
+      `);
+    }
+    body = `<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.8rem;">${videos.join("")}</div>
+      <label style="display:block;margin:0.4rem 0;"><input type="checkbox" class="recap-format" value="vertical" checked> Vertical 9:16</label>
+      <label style="display:block;margin:0.4rem 0 0.8rem;"><input type="checkbox" class="recap-format" value="horizontal" checked> Horizontal 16:9</label>
+      <button type="button" id="generate-recap">Régénérer</button>`;
+  } else {
+    body = `<p class="hint">${RECAP_STATUS_LABELS[status] || status}</p>`;
+  }
+  return `<h3 style="margin-top:1.5rem;">Vidéo résumé (TikTok / YouTube)</h3>${body}`;
+}
+
+async function generateRecap(id, formats) {
+  try {
+    await api(`/api/movies/${id}/recap`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formats }),
+    });
+    openMovie(id);
+    ensurePolling();
   } catch (err) {
     alert("Erreur : " + err.message);
   }
@@ -167,6 +252,7 @@ async function openMovie(id) {
 function closeModal() {
   modal.classList.add("hidden");
   modalBody.innerHTML = "";
+  openMovieId = null;
 }
 
 modalClose.addEventListener("click", closeModal);

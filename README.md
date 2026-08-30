@@ -12,6 +12,14 @@ important un fichier vidéo — et en obtenir automatiquement un résumé.
 - **Résumé** : généré par IA (Claude, via `ANTHROPIC_API_KEY`) si une clé est
   configurée, sinon un résumé automatique extractif 100% local est utilisé —
   l'appli fonctionne donc sans aucune clé API pour la partie vidéo.
+- **Vidéo résumé (TikTok / YouTube)** : pour un film importé par fichier vidéo,
+  génère automatiquement une vidéo courte à partir d'extraits de la vidéo
+  source, avec narration audio du résumé (synthèse vocale) et sous-titres
+  incrustés, exportée en vertical 9:16 (TikTok / Shorts) et/ou horizontal 16:9
+  (YouTube). ⚠️ Republier des extraits d'un film dont tu n'as pas les droits
+  enfreint généralement le droit d'auteur (Content ID, retraits DMCA, strikes) —
+  utilise cette fonctionnalité uniquement sur du contenu dont tu as les droits
+  ou l'autorisation.
 - Historique des films importés avec suivi de la progression (extraction →
   transcription → résumé) et suppression.
 
@@ -19,9 +27,15 @@ important un fichier vidéo — et en obtenir automatiquement un résumé.
 
 - Python 3.11+
 - [ffmpeg](https://ffmpeg.org/download.html) installé et disponible dans le
-  `PATH` (nécessaire uniquement pour l'import de fichiers vidéo) :
+  `PATH` (nécessaire pour l'import de fichiers vidéo et la génération de
+  vidéos résumé) :
   - Debian/Ubuntu : `sudo apt install ffmpeg`
   - macOS : `brew install ffmpeg`
+- (Optionnel, secours hors-ligne pour la narration) `espeak-ng` : utilisé
+  automatiquement si `edge-tts` échoue (pas de connexion internet). Sans
+  connexion internet ni `espeak-ng`, la génération de vidéo résumé échouera
+  avec un message explicite.
+  - Debian/Ubuntu : `sudo apt install espeak-ng`
 
 ## Installation
 
@@ -44,6 +58,8 @@ cp .env.example .env
   fichier vidéo fonctionne.
 - `ANTHROPIC_API_KEY` : optionnelle, améliore la qualité des résumés. Sans
   elle, un résumé extractif local est généré à la place.
+- `TTS_VOICE` : voix de narration edge-tts pour les vidéos résumé (défaut
+  `fr-FR-DeniseNeural`). Liste des voix : `edge-tts --list-voices`.
 
 ## Lancer l'application
 
@@ -69,8 +85,10 @@ backend/app/
     tmdb.py            # recherche / détails via TMDB
     transcription.py    # ffmpeg + faster-whisper
     summarizer.py        # résumé IA (optionnel) ou extractif local
+    tts.py                # narration audio + sous-titres (edge-tts ou espeak-ng)
+    recap.py               # montage ffmpeg de la vidéo résumé (9:16 / 16:9)
   routers/
-    search.py, movies.py, import_video.py
+    search.py, movies.py, import_video.py, recap.py
 frontend/               # page unique HTML/CSS/JS (sans framework)
-data/                    # base SQLite + fichiers vidéo/audio (ignoré par git)
+data/                    # base SQLite + fichiers vidéo/audio/recaps (ignoré par git)
 ```
