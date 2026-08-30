@@ -59,3 +59,33 @@ class Movie(Base):
     @property
     def recap_horizontal_available(self) -> bool:
         return bool(self.recap_horizontal_filename)
+
+
+class StoryVideoStatus(str, enum.Enum):
+    pending = "pending"
+    narrating = "narrating"
+    assembling = "assembling"
+    done = "done"
+    error = "error"
+
+
+class StoryVideo(Base):
+    __tablename__ = "story_videos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    story_text = Column(Text, nullable=False)
+    image_filenames = Column(JSON, nullable=False)
+    status = Column(Enum(StoryVideoStatus), default=StoryVideoStatus.pending, nullable=False)
+    error = Column(Text, nullable=True)
+    vertical_filename = Column(String, nullable=True)
+    horizontal_filename = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    @property
+    def vertical_available(self) -> bool:
+        return bool(self.vertical_filename)
+
+    @property
+    def horizontal_available(self) -> bool:
+        return bool(self.horizontal_filename)

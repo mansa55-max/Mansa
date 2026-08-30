@@ -55,3 +55,26 @@ class MovieListItem(BaseModel):
     job_status: str
     recap_status: str
     created_at: datetime
+
+
+class StoryVideoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    story_text: str
+    image_filenames: list[str]
+    status: str
+    error: Optional[str] = None
+    vertical_available: bool = False
+    horizontal_available: bool = False
+    created_at: datetime
+
+
+class StoryVideoListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    status: str
+    created_at: datetime

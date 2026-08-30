@@ -10,9 +10,11 @@ DATA_DIR = BASE_DIR / "data"
 VIDEOS_DIR = DATA_DIR / "videos"
 AUDIO_DIR = DATA_DIR / "audio"
 RECAPS_DIR = DATA_DIR / "recaps"
+STORY_IMAGES_DIR = DATA_DIR / "story_images"
+STORY_VIDEOS_DIR = DATA_DIR / "story_videos"
 DB_PATH = DATA_DIR / "mansa.db"
 
-for directory in (DATA_DIR, VIDEOS_DIR, AUDIO_DIR, RECAPS_DIR):
+for directory in (DATA_DIR, VIDEOS_DIR, AUDIO_DIR, RECAPS_DIR, STORY_IMAGES_DIR, STORY_VIDEOS_DIR):
     directory.mkdir(parents=True, exist_ok=True)
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")

@@ -22,6 +22,12 @@ important un fichier vidéo — et en obtenir automatiquement un résumé.
   ou l'autorisation.
 - Historique des films importés avec suivi de la progression (extraction →
   transcription → résumé) et suppression.
+- **Vidéo documentaire à partir d'une histoire** : donne un texte (histoire)
+  et tes propres images (photos, cartes, documents...), l'appli génère une
+  narration audio, applique un effet de zoom/pan lent (Ken Burns) sur chaque
+  image en rythme avec le texte, incruste des sous-titres synchronisés, et
+  exporte en vertical 9:16 et/ou horizontal 16:9. Section indépendante de
+  l'import de film, dans la même appli.
 
 ## Prérequis
 
@@ -123,9 +129,11 @@ backend/app/
     transcription.py    # ffmpeg + faster-whisper
     summarizer.py        # résumé IA (optionnel) ou extractif local
     tts.py                # narration audio + sous-titres (edge-tts ou espeak-ng)
-    recap.py               # montage ffmpeg de la vidéo résumé (9:16 / 16:9)
+    video_common.py        # helpers ffmpeg partagés (concat, mux, sous-titres...)
+    recap.py                 # montage vidéo résumé à partir d'extraits (9:16 / 16:9)
+    storyvideo.py             # montage vidéo Ken Burns à partir d'images (9:16 / 16:9)
   routers/
-    search.py, movies.py, import_video.py, recap.py
+    search.py, movies.py, import_video.py, recap.py, story.py
 frontend/               # page unique HTML/CSS/JS (sans framework)
-data/                    # base SQLite + fichiers vidéo/audio/recaps (ignoré par git)
+data/                    # base SQLite + fichiers vidéo/audio/recaps/images (ignoré par git)
 ```

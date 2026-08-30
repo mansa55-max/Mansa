@@ -5,6 +5,12 @@ const uploadForm = document.getElementById("upload-form");
 const videoInput = document.getElementById("video-input");
 const uploadStatus = document.getElementById("upload-status");
 const movieList = document.getElementById("movie-list");
+const storyForm = document.getElementById("story-form");
+const storyTitleInput = document.getElementById("story-title");
+const storyTextInput = document.getElementById("story-text");
+const storyImagesInput = document.getElementById("story-images");
+const storyStatus = document.getElementById("story-status");
+const storyList = document.getElementById("story-list");
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modal-body");
 const modalClose = document.getElementById("modal-close");
@@ -27,8 +33,17 @@ const RECAP_STATUS_LABELS = {
   error: "Erreur",
 };
 
+const STORY_STATUS_LABELS = {
+  pending: "En attente...",
+  narrating: "Génération de la narration audio...",
+  assembling: "Montage de la vidéo...",
+  done: "Terminé",
+  error: "Erreur",
+};
+
 let pollTimer = null;
 let openMovieId = null;
+let openStoryId = null;
 
 async function api(path, options) {
   const res = await fetch(path, options);
@@ -86,7 +101,7 @@ async function importFromSearch(tmdbId, container) {
       body: JSON.stringify({ tmdb_id: tmdbId }),
     });
     button.textContent = "Importé ✓";
-    loadMovies();
+    refreshAll();
   } catch (err) {
     button.disabled = false;
     button.textContent = "Réessayer";
@@ -105,10 +120,36 @@ uploadForm.addEventListener("submit", async (e) => {
     await api("/api/import/video", { method: "POST", body: formData });
     uploadStatus.innerHTML = "<p class='hint'>Import lancé, suis la progression ci-dessous.</p>";
     uploadForm.reset();
-    loadMovies();
-    ensurePolling();
+    refreshAll();
   } catch (err) {
     uploadStatus.innerHTML = `<p class="error-message">${escapeHtml(err.message)}</p>`;
+  }
+});
+
+storyForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const files = storyImagesInput.files;
+  if (!files.length) return;
+  const formats = Array.from(document.querySelectorAll(".story-format:checked")).map((el) => el.value);
+  if (!formats.length) {
+    alert("Choisis au moins un format.");
+    return;
+  }
+  const formData = new FormData();
+  formData.append("title", storyTitleInput.value.trim() || "Histoire sans titre");
+  formData.append("story", storyTextInput.value.trim());
+  formData.append("formats", formats.join(","));
+  for (const file of files) {
+    formData.append("images", file);
+  }
+  storyStatus.innerHTML = "<p class='hint'>Envoi des images...</p>";
+  try {
+    await api("/api/story-videos", { method: "POST", body: formData });
+    storyStatus.innerHTML = "<p class='hint'>Génération lancée, suis la progression ci-dessous.</p>";
+    storyForm.reset();
+    refreshAll();
+  } catch (err) {
+    storyStatus.innerHTML = `<p class="error-message">${escapeHtml(err.message)}</p>`;
   }
 });
 
@@ -116,19 +157,38 @@ async function loadMovies() {
   try {
     const movies = await api("/api/movies");
     renderMovies(movies);
-    const stillWorking = movies.some(
+    if (openMovieId && movies.some((m) => m.id === openMovieId)) {
+      await openMovie(openMovieId);
+    }
+    return movies.some(
       (m) => !["done", "error"].includes(m.job_status) || !["none", "done", "error"].includes(m.recap_status)
     );
-    if (stillWorking) {
-      ensurePolling();
-    } else {
-      stopPolling();
-    }
-    if (openMovieId && movies.some((m) => m.id === openMovieId)) {
-      openMovie(openMovieId);
-    }
   } catch (err) {
     movieList.innerHTML = `<p class="error-message">${escapeHtml(err.message)}</p>`;
+    return false;
+  }
+}
+
+async function loadStoryVideos() {
+  try {
+    const stories = await api("/api/story-videos");
+    renderStoryVideos(stories);
+    if (openStoryId && stories.some((s) => s.id === openStoryId)) {
+      await openStory(openStoryId);
+    }
+    return stories.some((s) => !["done", "error"].includes(s.status));
+  } catch (err) {
+    storyList.innerHTML = `<p class="error-message">${escapeHtml(err.message)}</p>`;
+    return false;
+  }
+}
+
+async function refreshAll() {
+  const [moviesWorking, storiesWorking] = await Promise.all([loadMovies(), loadStoryVideos()]);
+  if (moviesWorking || storiesWorking) {
+    ensurePolling();
+  } else {
+    stopPolling();
   }
 }
 
@@ -156,10 +216,34 @@ function renderMovies(movies) {
   }
 }
 
+function renderStoryVideos(stories) {
+  if (!stories.length) {
+    storyList.innerHTML = "<p class='empty'>Aucune vidéo générée pour le moment.</p>";
+    return;
+  }
+  storyList.innerHTML = "";
+  for (const story of stories) {
+    const card = document.createElement("div");
+    card.className = "movie-card";
+    const statusLabel = STORY_STATUS_LABELS[story.status] || story.status;
+    const statusClass = story.status === "error" ? "error" : story.status === "done" ? "done" : "";
+    card.innerHTML = `
+      <div class="placeholder">📽️</div>
+      <div class="card-body">
+        <h3>${escapeHtml(story.title)}</h3>
+        <div class="status ${statusClass}">${statusLabel}</div>
+      </div>
+    `;
+    card.addEventListener("click", () => openStory(story.id));
+    storyList.appendChild(card);
+  }
+}
+
 async function openMovie(id) {
   try {
     const movie = await api(`/api/movies/${id}`);
     openMovieId = id;
+    openStoryId = null;
     modalBody.innerHTML = `
       <h2>${escapeHtml(movie.title)} ${movie.year ? `(${escapeHtml(movie.year)})` : ""}</h2>
       ${movie.poster_url ? `<img src="${movie.poster_url}" style="max-width:160px;border-radius:8px;margin-bottom:1rem;">` : ""}
@@ -175,7 +259,7 @@ async function openMovie(id) {
       if (!confirm("Supprimer ce film importé ?")) return;
       await api(`/api/movies/${id}`, { method: "DELETE" });
       closeModal();
-      loadMovies();
+      refreshAll();
     });
     const recapButton = document.getElementById("generate-recap");
     if (recapButton) {
@@ -242,8 +326,52 @@ async function generateRecap(id, formats) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ formats }),
     });
-    openMovie(id);
+    await openMovie(id);
     ensurePolling();
+  } catch (err) {
+    alert("Erreur : " + err.message);
+  }
+}
+
+async function openStory(id) {
+  try {
+    const story = await api(`/api/story-videos/${id}`);
+    openStoryId = id;
+    openMovieId = null;
+    const videos = [];
+    if (story.vertical_available) {
+      videos.push(`
+        <div>
+          <p class="hint">Vertical (TikTok / Shorts)</p>
+          <video controls style="max-width:220px;border-radius:8px;" src="/api/story-videos/${story.id}/video/vertical"></video><br>
+          <a href="/api/story-videos/${story.id}/video/vertical" class="hint">Télécharger</a>
+        </div>
+      `);
+    }
+    if (story.horizontal_available) {
+      videos.push(`
+        <div>
+          <p class="hint">Horizontal (YouTube)</p>
+          <video controls style="max-width:320px;border-radius:8px;" src="/api/story-videos/${story.id}/video/horizontal"></video><br>
+          <a href="/api/story-videos/${story.id}/video/horizontal" class="hint">Télécharger</a>
+        </div>
+      `);
+    }
+    modalBody.innerHTML = `
+      <h2>${escapeHtml(story.title)}</h2>
+      <p class="hint">${escapeHtml(story.story_text)}</p>
+      ${story.status !== "done" ? `<p class="hint">Statut : ${STORY_STATUS_LABELS[story.status] || story.status}</p>` : ""}
+      ${story.error ? `<p class="error-message">${escapeHtml(story.error)}</p>` : ""}
+      ${videos.length ? `<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin:1rem 0;">${videos.join("")}</div>` : ""}
+      <p><button type="button" id="delete-story" style="margin-top:0.5rem;background:#402;color:#ff9c9c;">Supprimer</button></p>
+    `;
+    document.getElementById("delete-story").addEventListener("click", async () => {
+      if (!confirm("Supprimer cette vidéo générée ?")) return;
+      await api(`/api/story-videos/${id}`, { method: "DELETE" });
+      closeModal();
+      refreshAll();
+    });
+    modal.classList.remove("hidden");
   } catch (err) {
     alert("Erreur : " + err.message);
   }
@@ -253,6 +381,7 @@ function closeModal() {
   modal.classList.add("hidden");
   modalBody.innerHTML = "";
   openMovieId = null;
+  openStoryId = null;
 }
 
 modalClose.addEventListener("click", closeModal);
@@ -262,7 +391,7 @@ modal.addEventListener("click", (e) => {
 
 function ensurePolling() {
   if (pollTimer) return;
-  pollTimer = setInterval(loadMovies, 4000);
+  pollTimer = setInterval(refreshAll, 4000);
 }
 
 function stopPolling() {
@@ -278,4 +407,4 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-loadMovies();
+refreshAll();
