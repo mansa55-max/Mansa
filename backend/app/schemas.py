@@ -1,0 +1,80 @@
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
+
+
+class TmdbSearchResult(BaseModel):
+    tmdb_id: int
+    title: str
+    year: Optional[str] = None
+    poster_url: Optional[str] = None
+    overview: Optional[str] = None
+
+
+class ImportFromSearchRequest(BaseModel):
+    tmdb_id: int
+
+
+class MovieOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    year: Optional[str] = None
+    poster_url: Optional[str] = None
+    genres: Optional[list[str]] = None
+    overview: Optional[str] = None
+    summary: Optional[str] = None
+    summary_source: Optional[str] = None
+    source: str
+    tmdb_id: Optional[int] = None
+    video_filename: Optional[str] = None
+    job_status: str
+    job_error: Optional[str] = None
+    recap_status: str
+    recap_error: Optional[str] = None
+    recap_vertical_available: bool = False
+    recap_horizontal_available: bool = False
+    created_at: datetime
+
+
+class RecapRequest(BaseModel):
+    formats: list[str] = ["vertical", "horizontal"]
+
+
+class MovieListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    year: Optional[str] = None
+    poster_url: Optional[str] = None
+    summary: Optional[str] = None
+    source: str
+    job_status: str
+    recap_status: str
+    created_at: datetime
+
+
+class StoryVideoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    story_text: str
+    image_filenames: list[str]
+    status: str
+    error: Optional[str] = None
+    vertical_available: bool = False
+    horizontal_available: bool = False
+    created_at: datetime
+
+
+class StoryVideoListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    status: str
+    created_at: datetime

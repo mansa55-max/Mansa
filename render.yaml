@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mansa
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: TMDB_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: WHISPER_MODEL_SIZE
+        value: tiny
+      - key: WHISPER_COMPUTE_TYPE
+        value: int8
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "200"
+      - key: TTS_VOICE
+        value: fr-FR-DeniseNeural

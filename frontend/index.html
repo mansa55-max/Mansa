@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mansa — Import &amp; Résumé de films</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>🎬 Mansa</h1>
+    <p class="subtitle">Importe un film (recherche ou fichier vidéo) et obtiens son résumé</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Rechercher un film</h2>
+      <form id="search-form" class="row">
+        <input id="search-input" type="text" placeholder="Titre du film..." autocomplete="off" required />
+        <button type="submit">Rechercher</button>
+      </form>
+      <div id="search-results" class="results"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Importer un fichier vidéo</h2>
+      <form id="upload-form" class="row">
+        <input id="video-input" type="file" accept=".mp4,.mkv,.mov,.avi,.webm,.m4v" required />
+        <button type="submit">Importer</button>
+      </form>
+      <p class="hint">Formats acceptés : mp4, mkv, mov, avi, webm, m4v. La transcription + le résumé peuvent prendre plusieurs minutes.</p>
+      <div id="upload-status"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Films importés</h2>
+      <div id="movie-list" class="movie-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Générer une vidéo documentaire</h2>
+      <p class="hint">Donne un texte (histoire) et tes propres images (photos, cartes, documents...) : l'appli génère une narration, applique un effet de zoom lent sur chaque image en rythme avec le texte, incruste des sous-titres, et exporte la vidéo.</p>
+      <form id="story-form">
+        <input id="story-title" type="text" placeholder="Titre de la vidéo..." autocomplete="off" required style="width:100%;margin-bottom:0.6rem;" />
+        <textarea id="story-text" placeholder="Raconte ton histoire ici..." required rows="5" style="width:100%;margin-bottom:0.6rem;padding:0.6rem 0.75rem;border-radius:8px;border:1px solid var(--border);background:#10131f;color:var(--text);font-family:inherit;"></textarea>
+        <input id="story-images" type="file" accept=".jpg,.jpeg,.png,.webp" multiple required style="margin-bottom:0.6rem;" />
+        <div style="margin-bottom:0.6rem;">
+          <label style="margin-right:1rem;"><input type="checkbox" class="story-format" value="vertical" checked> Vertical 9:16 (TikTok / Shorts)</label>
+          <label><input type="checkbox" class="story-format" value="horizontal" checked> Horizontal 16:9 (YouTube)</label>
+        </div>
+        <button type="submit">Générer la vidéo</button>
+      </form>
+      <div id="story-status"></div>
+      <div id="story-list" class="movie-list" style="margin-top:1rem;"></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="modal-close" class="modal-close">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
