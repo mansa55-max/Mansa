@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ugc-ads-studio
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: HEYGEN_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
