@@ -3,6 +3,8 @@
 Web app to generate UGC-style ad videos (talking AI avatar + voice) from a
 product description or script. Built with Next.js (App Router) and Supabase.
 
+Live demo: https://mansa-six.vercel.app
+
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS v4)
