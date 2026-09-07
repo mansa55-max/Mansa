@@ -6,6 +6,12 @@ const PROTECTED_PREFIXES = ["/dashboard", "/new", "/projects"];
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    // Supabase isn't configured yet (e.g. local checkout without
+    // .env.local) — let public routes render instead of hard-crashing.
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
