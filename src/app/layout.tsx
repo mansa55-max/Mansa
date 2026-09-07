@@ -17,7 +17,9 @@ export const metadata: Metadata = {
   description: "Generate UGC-style ad videos with AI avatars and voices.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
